@@ -8,10 +8,10 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define SCREEN_WIDTH 128    // OLED display width, in pixels
-#define SCREEN_HEIGHT 64    // OLED display height, in pixels
-#define OLED_RESET -1       // Reset pin # (or -1 if sharing Arduino reset pin)
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+//#define SCREEN_WIDTH 128    // OLED display width, in pixels
+//#define SCREEN_HEIGHT 64    // OLED display height, in pixels
+//#define OLED_RESET -1       // Reset pin # (or -1 if sharing Arduino reset pin)
+//Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // RO to pin 8 & DI to pin 9 when using AltSoftSerial
 #define RE 6
@@ -20,9 +20,13 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 const byte nitro[] = {0x01, 0x03, 0x00, 0x1e, 0x00, 0x01, 0xe4, 0x0c};
 const byte phos[] = {0x01, 0x03, 0x00, 0x1f, 0x00, 0x01, 0xb5, 0xcc};
 const byte pota[] = {0x01, 0x03, 0x00, 0x20, 0x00, 0x01, 0x85, 0xc0};
+const byte npk[] = {0x01, 0x03, 0x00, 0x1e, 0x00, 0x03, 0x65, 0xcd};
+const byte cond[] = {0x01, 0x03, 0x00, 0x15, 0x00, 0x01, 0x95, 0xCE};
+const byte ph[] = {0x01, 0x03, 0x00, 0x06, 0x00, 0x01, 0x64, 0x0B};
 
 byte values[11];
 AltSoftSerial mod;
+
 
 void setup() {
   Serial.begin(9600);
@@ -34,6 +38,7 @@ void setup() {
   digitalWrite(DE, LOW);
   digitalWrite(RE, LOW);
 
+  /*
   //Initializing and Configuring OLED display
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C); //initialize with the I2C addr 0x3C (128x64)
   delay(500);
@@ -47,10 +52,12 @@ void setup() {
   display.print("Initializing");
   display.display();
   delay(3000);
+  */
 }
 
 void loop() {
-  byte val1, val2, val3;
+
+  byte val1, val2, val3, val4, val5;
   Serial.print("Nitrogen: ");
   val1 = nitrogen();
   Serial.print(" = ");
@@ -70,11 +77,24 @@ void loop() {
   Serial.print(" = ");
   Serial.print(val3);
   Serial.println(" mg/kg");
-  Serial.println();
-  Serial.println();
-display.clearDisplay();
   
- 
+  Serial.print("Conductivity: ");
+  val4 = soilconductivity();
+  Serial.print(" = ");
+  Serial.print(val4);
+  Serial.println(" uS/cm");
+  
+  Serial.print("pH: ");
+  val3 = potassium();
+  Serial.print(" = ");
+  Serial.print(val5);
+  Serial.println(" pH");
+  Serial.println();
+  Serial.println();
+
+/*
+display.clearDisplay();
+   
   display.setTextSize(2);
   display.setCursor(0, 5);
   display.print("N: ");
@@ -95,9 +115,10 @@ display.clearDisplay();
   display.print(val3);
   display.setTextSize(1);
   display.print(" mg/kg");
- 
   display.display();
-  delay(3000);
+  
+*/
+delay(1000);
 }
 
 byte nitrogen() {
@@ -168,3 +189,67 @@ byte potassium() {
   }
   return values[4];
 }
+
+// register with all npk vals
+  byte* npkall() {
+    byte arr[3];
+    mod.flushInput();
+    digitalWrite(DE, HIGH);
+    digitalWrite(RE, HIGH);
+    delay(1);
+    for (uint8_t i = 0; i < sizeof(pota); i++ ) mod.write( npk[i] );
+    mod.flush();
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+
+    delay(200);
+    for (byte i = 0; i < 7; i++) {
+    values[i] = mod.read();
+    Serial.print(values[i], HEX);
+    Serial.print(' ');
+    }
+    arr[0] = values[4];
+    arr[1] = values[6];
+    arr[2] = values[8];
+
+    return arr;
+  }
+
+  byte soilconductivity(){
+    mod.flushInput();
+    digitalWrite(DE, HIGH);
+    digitalWrite(RE, HIGH);
+    delay(1);
+    for (uint8_t i = 0; i < sizeof(cond); i++ ) mod.write( cond[i] );
+    mod.flush();
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+    // delay to allow response bytes to be received!
+    delay(200);
+    for (byte i = 0; i < 7; i++) {
+      values[i] = mod.read();
+      Serial.print(values[i], HEX);
+      Serial.print(' ');
+    }
+    return values[4];
+  }
+
+  byte pHlevel(){
+    mod.flushInput();
+    digitalWrite(DE, HIGH);
+    digitalWrite(RE, HIGH);
+    delay(1);
+    for (uint8_t i = 0; i < sizeof(ph); i++ ) mod.write( ph[i] );
+    mod.flush();
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+// delay to allow response bytes to be received!
+    delay(200);
+    for (byte i = 0; i < 7; i++) {
+      values[i] = mod.read();
+      Serial.print(values[i], HEX);
+      Serial.print(' ');
+    }
+    return values[4];
+  }
+
