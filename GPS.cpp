@@ -21,7 +21,6 @@
       while (gpsSerial.available()) {
         gps.encode(gpsSerial.read())
       }
-    }
           // Data successfully parsed, now you can access GPS information
           if (gps.location.isUpdated()) {
             Serial.print("Satellite Count:");
@@ -39,6 +38,6 @@
           } else {
             Serial.println("Location Invalid");
           }   
-        }
+      }
   
     
